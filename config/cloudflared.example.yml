@@ -1,0 +1,19 @@
+# Cloudflare Tunnel config — copy to config/cloudflared.yml and fill in.
+#
+# Setup (one-time, after <your-domain.com> is live in Cloudflare):
+#   cloudflared tunnel login
+#   cloudflared tunnel create <tunnel-name>
+#   cloudflared tunnel route dns <tunnel-name> <your-domain.com>
+#   # `create` writes ~/.cloudflared/<TUNNEL_ID>.json — point credentials-file at it.
+#
+# Run (day-of):
+#   cloudflared tunnel --config config/cloudflared.yml run   (or: make tunnel)
+
+tunnel: <tunnel-name>
+credentials-file: /Users/<you>/.cloudflared/<TUNNEL_ID>.json
+
+ingress:
+  - hostname: <your-domain.com>
+    service: http://localhost:8000
+  # Catch-all required by cloudflared.
+  - service: http_status:404

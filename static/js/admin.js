@@ -1,6 +1,6 @@
 // Admin review dashboard: live queue of held photos with approve/reject.
 
-const token = window.OMAHA_ADMIN_TOKEN || "";
+const token = window.SLIDESHOW_ADMIN_TOKEN || "";
 const queueEl = document.getElementById("queue");
 const emptyEl = document.getElementById("empty");
 const countEl = document.getElementById("count");

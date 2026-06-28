@@ -1,6 +1,6 @@
-"""Runtime configuration for the Omaha-88 system.
+"""Runtime configuration.
 
-All values are overridable via environment variables (prefix ``OMAHA_``) or a
+All values are overridable via environment variables (prefix ``SLIDESHOW_``) or a
 local ``.env`` file, so the same code runs on a dev laptop and at the venue.
 """
 
@@ -17,24 +17,24 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_prefix="OMAHA_",
+        env_prefix="SLIDESHOW_",
         env_file=".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )
 
-    # --- Event identity ---------------------------------------------------
-    event_name: str = "Kat & Chase"
-    event_date: str = "2026-08-08"
-    venue: str = "Leo Ballroom, Omaha"
-    public_domain: str = "https://katandchase2026.com"
+    # --- Event identity (override these in .env) --------------------------
+    event_name: str = "Our Wedding"
+    event_date: str = ""
+    venue: str = ""
+    public_domain: str = "http://localhost:8000"
 
     # --- Server -----------------------------------------------------------
     host: str = "0.0.0.0"
     port: int = 8000
 
     # --- Storage ----------------------------------------------------------
-    # Photos live entirely in object storage (see OMAHA_ARCHIVE_* below); the
+    # Photos live entirely in object storage (see SLIDESHOW_ARCHIVE_* below); the
     # only local path is the model cache.
     models_dir: Path = BASE_DIR / "models"
     max_upload_mb: int = 25

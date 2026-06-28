@@ -25,7 +25,7 @@ from PIL import Image
 
 from .config import Settings
 
-logger = logging.getLogger("omaha.moderation")
+logger = logging.getLogger("slideshow.moderation")
 
 SAFE = "SAFE"
 UNSAFE = "UNSAFE"
@@ -190,7 +190,7 @@ class OpenRouterGeminiBackend(Backend):
         headers = {
             "Authorization": f"Bearer {self.settings.openrouter_api_key}",
             "HTTP-Referer": self.settings.public_domain,
-            "X-Title": "Omaha-88 Wedding Moderation",
+            "X-Title": "Wedding Slideshow Moderation",
         }
         url = f"{self.settings.openrouter_base_url.rstrip('/')}/chat/completions"
         with httpx.Client(timeout=20.0) as client:

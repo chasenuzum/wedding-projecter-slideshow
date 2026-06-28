@@ -5,7 +5,7 @@
 {% block content %}
 <main class="upload-card">
   <header class="upload-header">
-    <p class="kicker">{{ venue }} · {{ event_date }}</p>
+    <p class="kicker">{{ [venue, event_date] | select | join(' · ') }}</p>
     <h1>{{ event_name }}</h1>
     <p class="subtitle">Add your photos to the live slideshow</p>
   </header>

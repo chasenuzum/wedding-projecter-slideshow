@@ -1,7 +1,7 @@
 [project]
 name = "wedding-live-vlm"
 version = "0.1.0"
-description = "Omaha-88: Local-first live wedding slideshow with on-device VLM moderation (Moondream 3 / MLX)"
+description = "Local-first live wedding slideshow with on-device VLM moderation (Moondream 3 / MLX)"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",

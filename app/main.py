@@ -33,7 +33,7 @@ from .queue import ModerationQueue
 from .storage import Storage, UploadError
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(name)s %(levelname)s %(message)s")
-logger = logging.getLogger("omaha.main")
+logger = logging.getLogger("slideshow.main")
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR.parent / "static"
@@ -100,15 +100,15 @@ def create_app(
         moderator.startup()
         mod_queue.start(settings.worker_count)
         logger.info(
-            "Omaha-88 up for %s (%s) — store: s3://%s",
-            settings.event_name, settings.event_date, settings.archive_bucket,
+            "Slideshow up for %s (%s) — store: s3://%s",
+            settings.event_name, settings.event_date or "—", settings.archive_bucket,
         )
         try:
             yield
         finally:
             await mod_queue.stop()
 
-    app = FastAPI(title="Omaha-88 Wedding Slideshow", lifespan=lifespan)
+    app = FastAPI(title="Live Wedding Slideshow", lifespan=lifespan)
     app.state.settings = settings
     app.state.storage = storage
     app.state.moderator = moderator
@@ -200,10 +200,10 @@ def create_app(
 
     @app.get("/admin")
     async def admin_page(request: Request, token: str | None = None):
-        require_admin(token, request.cookies.get("omaha_admin"))
+        require_admin(token, request.cookies.get("slideshow_admin"))
         resp = templates.TemplateResponse(request, "admin.html", ctx(token=token or ""))
         if token:
-            resp.set_cookie("omaha_admin", token, httponly=True, samesite="lax")
+            resp.set_cookie("slideshow_admin", token, httponly=True, samesite="lax")
         return resp
 
     # --- uploads ----------------------------------------------------------
@@ -246,7 +246,7 @@ def create_app(
         if "/" in filename or ".." in filename:
             raise HTTPException(404)
         if state not in PUBLIC_STATES:
-            require_admin(token, request.cookies.get("omaha_admin"))
+            require_admin(token, request.cookies.get("slideshow_admin"))
         data = await run_in_threadpool(storage.object_bytes, state, filename)
         if data is None:
             raise HTTPException(404)
@@ -259,7 +259,7 @@ def create_app(
     # --- admin decisions --------------------------------------------------
     @app.post("/admin/decision")
     async def admin_decision(request: Request, token: str | None = None):
-        require_admin(token, request.cookies.get("omaha_admin"))
+        require_admin(token, request.cookies.get("slideshow_admin"))
         body = await request.json()
         photo_id = body.get("id")
         action = body.get("action")
@@ -312,7 +312,7 @@ def create_app(
 
     @app.websocket("/ws/admin")
     async def ws_admin(ws: WebSocket, token: str | None = None):
-        if (token or ws.cookies.get("omaha_admin")) != settings.admin_token:
+        if (token or ws.cookies.get("slideshow_admin")) != settings.admin_token:
             await ws.close(code=4403)
             return
         await manager.connect(ws, "admin")

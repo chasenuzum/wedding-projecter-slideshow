@@ -4,7 +4,7 @@
     uv run python scripts/test_moderation.py nudity.jpg
 
 Prints the raw NSFW score, Moondream's raw answer, and the final verdict for
-each image so you can pick OMAHA_NSFW_THRESHOLD with real numbers. A local file
+each image so you can pick SLIDESHOW_NSFW_THRESHOLD with real numbers. A local file
 path works without object storage; a photo id is fetched from the S3 store.
 
 Tip: stop the running app first, or this loads a second copy of the models.

@@ -16,6 +16,8 @@ wheels/
 .env
 .env.*
 !.env.example
+# Your real tunnel config (has tunnel id + credentials path); use the example.
+config/cloudflared.yml
 
 # --- Guest photos & metadata (never commit) ---
 data/uploads/*

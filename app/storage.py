@@ -5,7 +5,7 @@ directory. Each photo is an object ``{state}/{id}.jpg`` with a sibling
 ``{state}/{id}.json`` metadata object. State changes (uploads -> review ->
 approved / rejected) are a server-side copy + delete (S3 has no rename).
 
-The bucket/credentials come from the OMAHA_ARCHIVE_* settings (the same ones the
+The bucket/credentials come from the SLIDESHOW_ARCHIVE_* settings (the same ones the
 old archiver used — now the primary store).
 """
 
@@ -96,7 +96,7 @@ class Storage:
         if self._client is None:
             if not self.bucket:
                 raise StorageError(
-                    "Object storage is required: set OMAHA_ARCHIVE_BUCKET (+ endpoint "
+                    "Object storage is required: set SLIDESHOW_ARCHIVE_BUCKET (+ endpoint "
                     "and credentials), e.g. Cloudflare R2 or `docker compose up -d` MinIO."
                 )
             self._client = self._build_client()

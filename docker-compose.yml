@@ -1,12 +1,12 @@
 # MinIO object storage for the off-site archive of approved photos.
 # The app runs natively on the Mac (MLX needs Apple Silicon); only MinIO is
-# containerized. Compose auto-loads ./.env, so it reuses your OMAHA_* values.
+# containerized. Compose auto-loads ./.env, so it reuses your SLIDESHOW_* values.
 #
 #   docker compose up -d        # start MinIO + auto-create the bucket
 #   docker compose down         # stop (data persists in the named volume)
 #   docker compose down -v      # stop AND wipe stored photos
 #
-# S3 API:      http://localhost:9000   (set as OMAHA_ARCHIVE_ENDPOINT_URL)
+# S3 API:      http://localhost:9000   (set as SLIDESHOW_ARCHIVE_ENDPOINT_URL)
 # Web console: http://localhost:9001
 
 services:
@@ -17,8 +17,8 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: ${OMAHA_ARCHIVE_ACCESS_KEY_ID:-minioadmin}
-      MINIO_ROOT_PASSWORD: ${OMAHA_ARCHIVE_SECRET_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_USER: ${SLIDESHOW_ARCHIVE_ACCESS_KEY_ID:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${SLIDESHOW_ARCHIVE_SECRET_ACCESS_KEY:-minioadmin}
     volumes:
       - minio-data:/data
     healthcheck:
@@ -34,9 +34,9 @@ services:
     depends_on:
       - minio
     environment:
-      ACCESS_KEY: ${OMAHA_ARCHIVE_ACCESS_KEY_ID:-minioadmin}
-      SECRET_KEY: ${OMAHA_ARCHIVE_SECRET_ACCESS_KEY:-minioadmin}
-      BUCKET: ${OMAHA_ARCHIVE_BUCKET:-wedding}
+      ACCESS_KEY: ${SLIDESHOW_ARCHIVE_ACCESS_KEY_ID:-minioadmin}
+      SECRET_KEY: ${SLIDESHOW_ARCHIVE_SECRET_ACCESS_KEY:-minioadmin}
+      BUCKET: ${SLIDESHOW_ARCHIVE_BUCKET:-wedding}
     entrypoint: >
       /bin/sh -c "
       until mc alias set local http://minio:9000 \"$$ACCESS_KEY\" \"$$SECRET_KEY\"; do

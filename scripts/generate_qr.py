@@ -2,7 +2,7 @@
 
     uv run python scripts/generate_qr.py
 
-Pulls the target URL from settings (OMAHA_PUBLIC_DOMAIN) and writes into the
+Pulls the target URL from settings (SLIDESHOW_PUBLIC_DOMAIN) and writes into the
 repo root, regardless of where the script is invoked from.
 """
 

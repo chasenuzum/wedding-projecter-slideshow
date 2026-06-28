@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from .moderation import SAFE, ModerationResult, WeddingModerator
 from .storage import PhotoRecord, Storage
 
-logger = logging.getLogger("omaha.queue")
+logger = logging.getLogger("slideshow.queue")
 
 
 class ModerationQueue:

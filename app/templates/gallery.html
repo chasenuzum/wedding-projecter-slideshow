@@ -4,7 +4,7 @@
 
 {% block content %}
 <header class="gallery-header">
-  <p class="kicker">{{ venue }} · {{ event_date }}</p>
+  <p class="kicker">{{ [venue, event_date] | select | join(' · ') }}</p>
   <h1>{{ event_name }}</h1>
   <p class="subtitle">{{ count }} photo{{ '' if count == 1 else 's' }} from the celebration</p>
   {% if count %}

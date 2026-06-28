@@ -5,7 +5,7 @@
 {% block content %}
 <div id="stage" class="stage">
   <div id="splash" class="splash">
-    <p class="kicker">{{ venue }} · {{ event_date }}</p>
+    <p class="kicker">{{ [venue, event_date] | select | join(' · ') }}</p>
     <h1>{{ event_name }}</h1>
     <p class="subtitle">Scan the QR code to add your photos</p>
     <p class="domain">{{ public_domain }}</p>
