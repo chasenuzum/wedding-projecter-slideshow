@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ event_name }} · Live{% endblock %}
+{% block body_class %}projector-page{% endblock %}
+
+{% block content %}
+<div id="stage" class="stage">
+  <div id="splash" class="splash">
+    <p class="kicker">{{ venue }} · {{ event_date }}</p>
+    <h1>{{ event_name }}</h1>
+    <p class="subtitle">Scan the QR code to add your photos</p>
+    <p class="domain">{{ public_domain }}</p>
+  </div>
+  <img id="photo-a" class="stage-photo" alt="" />
+  <img id="photo-b" class="stage-photo" alt="" />
+</div>
+<div id="conn" class="conn-dot" title="connection"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/projector.js?v={{ static_v }}"></script>
+{% endblock %}

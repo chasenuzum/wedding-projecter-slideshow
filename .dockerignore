@@ -1,0 +1,38 @@
+# Keep any future app image lean and free of secrets/data.
+# (Today only MinIO is containerized via the official image — this is here for
+# when/if the app is built into an image too.)
+
+.git/
+.gitignore
+.venv/
+__pycache__/
+*.py[oc]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Secrets & local config
+.env
+.env.*
+!.env.example
+
+# Guest photos, metadata, and model weights — never bake into an image
+data/
+models/
+
+# Generated artifacts
+wedding_slideshow_qr.svg
+wedding_slideshow_qr.png
+*.zip
+
+# Tests & docs aren't needed at runtime
+tests/
+README.md
+plan.md
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Photo Booth · {{ event_name }}{% endblock %}
+{% block body_class %}booth-page{% endblock %}
+
+{% block content %}
+<div id="booth" class="booth">
+  <video id="cam" class="booth-cam" autoplay playsinline muted></video>
+  <canvas id="canvas" hidden></canvas>
+
+  <div id="countdown" class="countdown" hidden></div>
+  <div id="flash" class="flash" hidden></div>
+
+  <div id="result" class="booth-result" hidden>
+    <img id="result-img" alt="" />
+    <p id="result-msg">Sent to the slideshow! 💛</p>
+  </div>
+
+  <div id="error" class="booth-error" hidden>
+    <p>📷 Camera unavailable.</p>
+    <small id="error-detail"></small>
+  </div>
+
+  <header class="booth-header">
+    <p class="kicker">{{ event_name }} · Photo Booth</p>
+  </header>
+
+  <div class="booth-controls">
+    <button id="flip-btn" class="icon-btn" title="Flip camera" hidden>⟲</button>
+    <button id="snap-btn" class="snap-btn" disabled>
+      <span class="snap-ring"></span>
+    </button>
+    <div class="icon-btn-spacer"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/booth.js?v={{ static_v }}"></script>
+{% endblock %}

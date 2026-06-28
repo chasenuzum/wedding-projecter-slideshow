@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Photos · {{ event_name }}{% endblock %}
+{% block body_class %}gallery-page{% endblock %}
+
+{% block content %}
+<header class="gallery-header">
+  <p class="kicker">{{ venue }} · {{ event_date }}</p>
+  <h1>{{ event_name }}</h1>
+  <p class="subtitle">{{ count }} photo{{ '' if count == 1 else 's' }} from the celebration</p>
+  {% if count %}
+  <a class="btn download-all" href="/gallery/all.zip" download>⬇ Download all ({{ count }})</a>
+  {% endif %}
+</header>
+
+{% if count %}
+<main class="gallery-grid">
+  {% for p in photos %}
+  <a class="gallery-item" href="/gallery/download/{{ p.id }}" download title="Download">
+    <img src="{{ p.url }}" alt="" loading="lazy" />
+    <span class="dl-badge">⬇</span>
+  </a>
+  {% endfor %}
+</main>
+{% else %}
+<p class="empty-state">No photos yet — check back soon! 💛</p>
+{% endif %}
+
+<footer class="gallery-footer">
+  <small>Add yours at <a href="/upload">{{ public_domain }}/upload</a></small>
+</footer>
+{% endblock %}

@@ -1,0 +1,20 @@
+# Cloudflare Tunnel config for Omaha-88.
+#
+# Setup (one-time, after katandchase2026.com is live in Cloudflare):
+#   cloudflared tunnel login
+#   cloudflared tunnel create omaha-88
+#   cloudflared tunnel route dns omaha-88 katandchase2026.com
+#   # `create` writes ~/.cloudflared/<TUNNEL_ID>.json — either rename it to
+#   # omaha-88.json or set credentials-file below to that <TUNNEL_ID>.json path.
+#
+# Run (day-of):
+#   cloudflared tunnel --config config/cloudflared.yml run   (or: make tunnel)
+
+tunnel: omaha-88
+credentials-file: /Users/chasenuzum/.cloudflared/f6ba725e-2989-4b08-8c43-4ae33cd441c5.json
+
+ingress:
+  - hostname: katandchase2026.com
+    service: http://localhost:8000
+  # Catch-all required by cloudflared.
+  - service: http_status:404

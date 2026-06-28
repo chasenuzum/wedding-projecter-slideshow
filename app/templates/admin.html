@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Review queue · {{ event_name }}{% endblock %}
+{% block body_class %}admin-page{% endblock %}
+
+{% block content %}
+<header class="admin-bar">
+  <h1>Review queue</h1>
+  <div class="admin-meta">
+    <span id="conn" class="conn-dot" title="connection"></span>
+    <span id="count" class="count">0 waiting</span>
+  </div>
+</header>
+
+<main id="queue" class="review-grid">
+  <p id="empty" class="empty-state">No photos waiting. 🎉</p>
+</main>
+
+<script>window.OMAHA_ADMIN_TOKEN = {{ token | tojson }};</script>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/admin.js?v={{ static_v }}"></script>
+{% endblock %}

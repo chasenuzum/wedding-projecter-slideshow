@@ -1,0 +1,50 @@
+# --- Python ---
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# --- Virtual env ---
+.venv/
+
+# --- Secrets / local config (NEVER commit) ---
+.env
+.env.*
+!.env.example
+
+# --- Guest photos & metadata (never commit) ---
+data/uploads/*
+data/review/*
+data/approved/*
+data/rejected/*
+!data/uploads/.gitkeep
+!data/review/.gitkeep
+!data/approved/.gitkeep
+!data/rejected/.gitkeep
+
+# --- Downloaded model weights ---
+models/*
+!models/.gitkeep
+
+# --- Generated artifacts ---
+wedding_slideshow_qr.svg
+wedding_slideshow_qr.png
+*.zip
+
+# --- Loose test images dropped in the repo root (e.g. nudity.jpg) ---
+/*.jpg
+/*.jpeg
+/*.png
+/*.webp
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
