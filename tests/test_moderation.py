@@ -1,6 +1,13 @@
 import pytest
 
-from app.moderation import SAFE, UNKNOWN, UNSAFE, WeddingModerator, parse_verdict
+from app.moderation import (
+    SAFE,
+    UNKNOWN,
+    UNSAFE,
+    WeddingModerator,
+    parse_structured_verdict,
+    parse_verdict,
+)
 from tests.conftest import StubBackend, StubNSFW, make_image_bytes
 
 
@@ -30,6 +37,49 @@ def test_parse_verdict_polarity_can_flip():
     # If a question were framed "is this safe?", yes would mean SAFE.
     assert parse_verdict("yes", yes_means_unsafe=False) == SAFE
     assert parse_verdict("no", yes_means_unsafe=False) == UNSAFE
+
+
+@pytest.mark.parametrize(
+    "answer,expected",
+    [
+        ('{"unsafe": true, "categories": ["nudity"]}', UNSAFE),
+        ('{"unsafe": false, "categories": []}', SAFE),
+        ('```json\n{"unsafe": true}\n```', UNSAFE),       # fenced
+        ('Sure! {"unsafe": false}', SAFE),                # prose-wrapped
+        ('[{"unsafe": true}]', UNSAFE),                   # array form
+        ('{"safe": true}', SAFE),                         # safe-polarity key
+        ('{"categories": ["gore"]}', UNSAFE),             # non-empty list
+        ('{"categories": []}', SAFE),                     # empty list
+        ('{"classification": "yes"}', UNSAFE),            # nested free-text
+        ("yes", UNSAFE),                                  # no JSON -> parse_verdict
+        ("no", SAFE),
+        ("garbage", UNSAFE),                              # fails toward review
+    ],
+)
+def test_parse_structured_verdict(answer, expected):
+    assert parse_structured_verdict(answer) == expected
+
+
+def test_structured_non_json_falls_through_to_next_backend(settings):
+    # Moondream ignores the JSON instruction -> we skip it and use OpenRouter.
+    mod = WeddingModerator(settings, backends=[
+        StubBackend("moondream", "I think it's fine", structured=True),
+        StubBackend("openrouter", '{"unsafe": true}', structured=True),
+    ])
+    result = mod.moderate(make_image_bytes())
+    assert result.verdict == UNSAFE
+    assert result.source == "openrouter"
+
+
+def test_structured_all_non_json_fails_safe(settings):
+    # Every structured backend misses -> fail safe (toward review) on last reply.
+    mod = WeddingModerator(settings, backends=[
+        StubBackend("moondream", "no idea", structured=True),
+        StubBackend("openrouter", "still prose", structured=True),
+    ])
+    result = mod.moderate(make_image_bytes())
+    assert result.verdict == UNSAFE
+    assert result.source == "openrouter"
 
 
 def test_chain_uses_primary_when_available(settings):

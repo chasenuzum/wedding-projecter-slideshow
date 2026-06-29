@@ -16,10 +16,12 @@ from __future__ import annotations
 
 import base64
 import io
+import json
 import logging
 import re
 import time
 from dataclasses import dataclass
+from typing import Any
 
 from PIL import Image
 
@@ -77,8 +79,69 @@ def parse_verdict(answer: str, yes_means_unsafe: bool = True) -> str:
     return UNSAFE
 
 
+def _extract_json(text: str) -> Any | None:
+    """Pull a JSON value out of a model reply, tolerating prose/code fences.
+
+    Returns the decoded object/array, or None if nothing parseable is found.
+    """
+    t = (text or "").strip()
+    if not t:
+        return None
+    # Strip ```json ... ``` fences the model sometimes wraps output in.
+    if t.startswith("```"):
+        t = t.strip("`").strip()
+        t = re.sub(r"^json\b", "", t, flags=re.IGNORECASE).strip()
+    try:
+        return json.loads(t)
+    except (ValueError, TypeError):
+        pass
+    # Otherwise grab the first {...} or [...] span and try that.
+    candidates = [i for i in (t.find("{"), t.find("[")) if i != -1]
+    if not candidates:
+        return None
+    start = min(candidates)
+    close = "}" if t[start] == "{" else "]"
+    end = t.rfind(close)
+    if end <= start:
+        return None
+    try:
+        return json.loads(t[start : end + 1])
+    except (ValueError, TypeError):
+        return None
+
+
+def parse_structured_verdict(answer: str, yes_means_unsafe: bool = True) -> str:
+    """Map a JSON moderation reply to SAFE / UNSAFE.
+
+    Reads the ``unsafe`` boolean Moondream is prompted to emit (with a few
+    aliases). Anything we can't read as structured JSON falls back to the
+    free-text :func:`parse_verdict`, which itself fails toward UNSAFE — so a
+    malformed reply still lands in review rather than on the projector.
+    """
+    obj = _extract_json(answer)
+    # A JSON array reply (per Moondream's array examples) -> use first object.
+    if isinstance(obj, list):
+        obj = next((x for x in obj if isinstance(x, dict)), None)
+    if isinstance(obj, dict):
+        for key in ("unsafe", "is_unsafe", "nsfw"):
+            if isinstance(obj.get(key), bool):
+                return UNSAFE if obj[key] else SAFE
+        for key in ("safe", "is_safe", "sfw"):
+            if isinstance(obj.get(key), bool):
+                return SAFE if obj[key] else UNSAFE
+        for key in ("classification", "verdict", "label", "answer"):
+            if isinstance(obj.get(key), str):
+                return parse_verdict(obj[key], yes_means_unsafe)
+        for key in ("categories", "reasons", "violations"):
+            if isinstance(obj.get(key), list):
+                return UNSAFE if obj[key] else SAFE
+    return parse_verdict(answer, yes_means_unsafe)
+
+
 class Backend:
     name = "base"
+    # When True, the moderator parses this backend's reply as structured JSON.
+    structured = False
 
     @property
     def available(self) -> bool:
@@ -96,6 +159,7 @@ class MoondreamLocalBackend(Backend):
         self.settings = settings
         self._model = None
         self._loaded = False
+        self.structured = settings.moderation_structured
 
     @property
     def available(self) -> bool:
@@ -140,15 +204,22 @@ class MoondreamLocalBackend(Backend):
             logger.warning("Moondream warmup failed: %s", exc)
 
     def _query(self, image: Image.Image) -> str:
+        # Structured JSON parses more reliably than free-text yes/no (Moondream 3
+        # emits clean JSON when the prompt asks for it).
+        question = (
+            self.settings.moderation_question_structured
+            if self.structured
+            else self.settings.moderation_question
+        )
         # reasoning=True is slower but more accurate for nuanced moderation calls.
         try:
             result = self._model.query(
-                image, self.settings.moderation_question,
+                image, question,
                 reasoning=self.settings.moderation_reasoning,
             )
         except TypeError:
             # Older signatures without the reasoning kwarg.
-            result = self._model.query(image, self.settings.moderation_question)
+            result = self._model.query(image, question)
         if isinstance(result, dict):
             return str(result.get("answer", ""))
         return str(result)
@@ -162,6 +233,7 @@ class OpenRouterGeminiBackend(Backend):
 
     def __init__(self, settings: Settings):
         self.settings = settings
+        self.structured = settings.moderation_structured
 
     @property
     def available(self) -> bool:
@@ -171,14 +243,20 @@ class OpenRouterGeminiBackend(Backend):
         import httpx
 
         b64 = base64.b64encode(jpeg_bytes).decode("ascii")
-        payload = {
+        question = (
+            self.settings.moderation_question_structured
+            if self.structured
+            else self.settings.moderation_question
+        )
+        payload: dict = {
             "model": self.settings.openrouter_model,
-            "max_tokens": 8,
+            # JSON needs more room than a one-word answer.
+            "max_tokens": 64 if self.structured else 8,
             "messages": [
                 {
                     "role": "user",
                     "content": [
-                        {"type": "text", "text": self.settings.moderation_question},
+                        {"type": "text", "text": question},
                         {
                             "type": "image_url",
                             "image_url": {"url": f"data:image/jpeg;base64,{b64}"},
@@ -187,6 +265,9 @@ class OpenRouterGeminiBackend(Backend):
                 }
             ],
         }
+        if self.structured:
+            # Ask OpenRouter/Gemini to constrain the reply to a JSON object.
+            payload["response_format"] = {"type": "json_object"}
         headers = {
             "Authorization": f"Bearer {self.settings.openrouter_api_key}",
             "HTTP-Referer": self.settings.public_domain,
@@ -308,6 +389,12 @@ class WeddingModerator:
 
         # 2. VLM chain for everything else (gestures, violence, …) + backup.
         last_error = "no backend available"
+        yes_means_unsafe = self.settings.moderation_yes_means_unsafe
+        # A structured backend that doesn't return parseable JSON is treated as a
+        # miss: we move on to the next backend (e.g. Moondream -> OpenRouter)
+        # rather than trusting its free-text. We keep the last such reply so that
+        # if every backend misses we can still fail safe on it (-> review).
+        bad_structured: tuple[str, str, float] | None = None
         for backend in self.backends:
             if not backend.available:
                 continue
@@ -319,10 +406,33 @@ class WeddingModerator:
                 logger.warning("backend %s failed: %s", backend.name, exc)
                 continue
             latency_ms = (time.perf_counter() - t0) * 1000
-            verdict = parse_verdict(raw, self.settings.moderation_yes_means_unsafe)
+
+            if getattr(backend, "structured", False) and _extract_json(raw) is None:
+                # Model ignored the JSON instruction — try the next backend.
+                last_error = f"{backend.name}: non-JSON reply"
+                bad_structured = (backend.name, str(raw), latency_ms)
+                logger.warning(
+                    "backend %s returned non-JSON; falling through: %s",
+                    backend.name, " ".join(str(raw).split())[:120],
+                )
+                continue
+
+            if getattr(backend, "structured", False):
+                verdict = parse_structured_verdict(raw, yes_means_unsafe)
+            else:
+                verdict = parse_verdict(raw, yes_means_unsafe)
             snippet = " ".join(str(raw).split())[:120]
             reason = f'{backend.name}: "{snippet}" -> {verdict}'
             return ModerationResult(verdict, backend.name, reason, latency_ms, raw=str(raw)[:200])
+
+        # Every structured backend missed: fail safe on the last reply we got
+        # (parse_verdict fails toward UNSAFE, so it lands in review).
+        if bad_structured is not None:
+            name, raw, latency_ms = bad_structured
+            verdict = parse_verdict(raw, yes_means_unsafe)
+            snippet = " ".join(raw.split())[:120]
+            reason = f'{name}: non-JSON "{snippet}" -> {verdict}'
+            return ModerationResult(verdict, name, reason, latency_ms, raw=raw[:200])
 
         # Nothing could classify it: hold for human review.
         return ModerationResult(UNKNOWN, "none", last_error, 0.0)

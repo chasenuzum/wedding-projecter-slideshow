@@ -67,6 +67,22 @@ class Settings(BaseSettings):
     # Moondream's reasoning mode is slower but more accurate for nuanced calls
     # like nudity. Worth the few hundred ms for the one thing we must not miss.
     moderation_reasoning: bool = True
+    # Moondream 3 can emit structured JSON when the prompt asks for it. A JSON
+    # verdict ("unsafe" bool + which categories) parses more reliably than
+    # free-text yes/no. Only Moondream uses this; we fall back to the yes/no
+    # parser if the model doesn't return valid JSON. (The OpenRouter fallback
+    # keeps the cheap single-word question.)
+    moderation_structured: bool = True
+    moderation_question_structured: str = (
+        "Look carefully at this photo. Respond with ONLY a JSON object and "
+        "nothing else, in this exact form:\n"
+        '{"unsafe": true or false, "categories": [list of strings]}\n'
+        'Set "unsafe" to true if the photo contains any nudity, exposed '
+        "breasts, genitals or buttocks, underwear/lingerie, sexual activity, "
+        'an obscene hand gesture, graphic violence, or gore. "categories" '
+        "lists which of those are present (empty if none). If you are not "
+        'sure, set "unsafe" to true.'
+    )
 
     # --- Dedicated NSFW classifier (primary nudity gate) ------------------
     # A purpose-built image classifier is far more reliable for nudity than a
@@ -74,12 +90,12 @@ class Settings(BaseSettings):
     # threshold) the photo is held regardless of what Moondream says.
     use_nsfw_classifier: bool = True
     nsfw_model_id: str = "Marqo/nsfw-image-detection-384"
-    nsfw_threshold: float = 0.5
+    nsfw_threshold: float = 0.9
 
     # --- Moderation: OpenRouter Gemini Flash (cloud fallback) -------------
     # Used only when the local model is unavailable. Empty key disables it.
     openrouter_api_key: str = ""
-    openrouter_model: str = "google/gemini-2.5-flash"
+    openrouter_model: str = "google/gemini-3.5-flash"
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
     # --- Admin review dashboard ------------------------------------------

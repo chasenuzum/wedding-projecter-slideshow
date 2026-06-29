@@ -50,10 +50,13 @@ def storage(settings, s3) -> Storage:
 class StubBackend(Backend):
     """Deterministic backend for tests."""
 
-    def __init__(self, name: str, reply: str | None, available: bool = True):
+    def __init__(
+        self, name: str, reply: str | None, available: bool = True, structured: bool = False
+    ):
         self._name = name
         self._reply = reply
         self._available = available
+        self.structured = structured
 
     @property
     def name(self) -> str:
